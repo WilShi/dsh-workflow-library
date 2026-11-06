@@ -44,7 +44,8 @@
     "prepare": "tsdown",
     "typecheck": "tsc --noEmit",
     "load-test": "node scripts/load-test.mjs",
-    "verify": "tsc --noEmit && tsdown && node scripts/load-test.mjs"
+    "verify": "tsc --noEmit && tsdown && node scripts/load-test.mjs && node scripts/e2e.mjs",
+    "e2e": "node scripts/e2e.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1-rc.1",

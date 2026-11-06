@@ -44,7 +44,23 @@ function asObjectValue(value: unknown): Record<string, unknown> {
 }
 
 export function createWorkflowTools(ctx: Context) {
-  const getEngine = () => (ctx as unknown as { workflowEngine?: WorkflowEngineLike }).workflowEngine;
+  /**
+   * Read the engine from the global service store.
+   *
+   * The plugin deliberately does not declare `workflowEngine` in `inject` so it
+   * still loads on deployments without the workflow capability. Because the
+   * service is therefore not injected, the `ctx.<name>` property proxy (which is
+   * topology-sensitive) cannot be relied on; `ctx.get` reads the service store
+   * directly.
+   */
+  const getEngine = (): WorkflowEngineLike | undefined => {
+    const store = ctx as unknown as {
+      get?: (name: string) => unknown;
+      workflowEngine?: WorkflowEngineLike;
+    };
+    const viaStore = typeof store.get === "function" ? (store.get("workflowEngine") as WorkflowEngineLike | undefined) : undefined;
+    return viaStore ?? store.workflowEngine;
+  };
 
   const listTool = defineTool({
     name: "workflow_list",

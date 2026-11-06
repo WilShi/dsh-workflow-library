@@ -77,6 +77,29 @@ return { reviewed: results.length, results }
 
 原生工具适合一次性的编排。这个插件适合**反复用的流程**——比如每次发版前的检查清单、每周的依赖审计、固定格式的报告生成。
 
+## 验证
+
+端到端测试跑的是**真实引擎**，不是 mock：
+
+```
+$ DSH_REPO=~/Documents/Code/deepseek-harness npm run e2e
+
+  ok  真实引擎与工具注册表已启动
+  ok  注册 4 个工具: workflow_list, workflow_show, workflow_run, workflow_save
+  ok  workflow_list 发现工作流: fanout
+  ok  workflow_show 返回脚本 8 行
+    run = {"name":"fanout","stopReason":"completed","agentsStarted":3,"value":{"count":3,"answers":[42,42,42]}}
+  ok  workflow_run 真实执行：3 个子 agent，耗时 50ms
+  ok  workflow_save 写入 saved-e2e，并立即出现在列表
+  ok  运行刚保存的工作流成功
+  ok  未知名字给出可执行报错
+E2E_PASS
+```
+
+启动的是真的 `SystemPrompt` + `ToolRuntime` + `SessionProjection` + `SubagentRuntime` + `WorkerThreadWorkflowEngine`，脚本在真实 worker 线程里执行，`agent()` 真的扇出。只有子 agent provider 被替换成桩，所以**不需要模型 key** 就能跑。
+
+`npm run verify` 还会跑类型检查、构建和加载测试。
+
 ## 实现说明
 
 - 编排引擎用的是 DSH 自带的（`ctx.workflowEngine.start()`），本插件不实现任何编排逻辑
