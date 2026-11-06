@@ -1,0 +1,5 @@
+# dsh-workflow-library is a tools-only plugin: it installs no UI and no services.
+# It reads workflow files from disk and drives the harness workflow engine.
+- insert:
+    - id: dsh-workflow-library
+      name: dsh-workflow-library

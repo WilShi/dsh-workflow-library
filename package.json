@@ -1,0 +1,60 @@
+{
+  "name": "dsh-workflow-library",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "可复用的工作流库：把编排脚本存成文件，按名字跑，支持 git 版本管理与团队共享。A reusable workflow library for DSH.",
+  "license": "MIT",
+  "author": "WilShi",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "workflow",
+    "orchestration",
+    "template",
+    "subagent"
+  ],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "prepare": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "load-test": "node scripts/load-test.mjs",
+    "verify": "tsc --noEmit && tsdown && node scripts/load-test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1-rc.1",
+    "@deepseek-ai/dsh-tools": "^0.2.2-rc.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
+    "@types/node": "^22.10.0",
+    "tsdown": "^0.13.0",
+    "typescript": "^5.9.0"
+  }
+}
