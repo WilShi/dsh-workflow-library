@@ -8,8 +8,16 @@ DSH 自带 `workflow` 工具，让模型写编排脚本扇出到多个子 agent�
 
 ## 安装
 
+从 npm：
+
 ```bash
 dsh plugin add dsh-workflow-library
+```
+
+或者直接从 GitHub 装（会走构建脚本）：
+
+```bash
+dsh plugin add github:WilShi/dsh-workflow-library
 ```
 
 ## 工作流长什么样
