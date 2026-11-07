@@ -1,6 +1,6 @@
 {
   "name": "dsh-workflow-library",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "可复用的工作流库：把编排脚本存成文件，按名字跑，支持 git 版本管理与团队共享。A reusable workflow library for DSH.",
   "license": "MIT",
@@ -57,5 +57,8 @@
     "@types/node": "^22.10.0",
     "tsdown": "^0.13.0",
     "typescript": "^5.9.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

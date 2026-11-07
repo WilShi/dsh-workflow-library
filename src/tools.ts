@@ -16,7 +16,7 @@ const text = (s: string) => [{ type: "text" as const, text: s }];
 interface WorkflowEngineLike {
   start(request: {
     script: string;
-    meta: { name: string; description: string; whenToUse?: string };
+    meta: { name: string; description: string; whenToUse?: string; phases?: { title: string }[] };
     args?: unknown;
     parent: unknown;
     signal?: AbortSignal;
@@ -80,6 +80,8 @@ export function createWorkflowTools(ctx: Context) {
                 name: { type: "string" },
                 description: { type: "string" },
                 whenToUse: { type: "string" },
+                args: { type: "string" },
+                phases: { type: "array", items: { type: "string" } },
                 source: { type: "string" },
               },
             },
@@ -94,7 +96,16 @@ export function createWorkflowTools(ctx: Context) {
     },
     async execute(_args, exec) {
       const list = discoverWorkflows(resolveCwd(exec?.agent));
-      return { workflows: list.map((w) => ({ name: w.name, description: w.description, ...(w.whenToUse ? { whenToUse: w.whenToUse } : {}), source: w.source })) };
+      return {
+        workflows: list.map((w) => ({
+          name: w.name,
+          description: w.description,
+          ...(w.whenToUse ? { whenToUse: w.whenToUse } : {}),
+          ...(w.args ? { args: w.args } : {}),
+          ...(w.phases ? { phases: w.phases } : {}),
+          source: w.source,
+        })),
+      };
     },
   });
 
@@ -111,20 +122,34 @@ export function createWorkflowTools(ctx: Context) {
         properties: {
           name: { type: "string" },
           description: { type: "string" },
+          args: { type: "string" },
+          phases: { type: "array", items: { type: "string" } },
           source: { type: "string" },
           path: { type: "string" },
           script: { type: "string" },
         },
       },
       render: (_a, value) => {
-        const v = value as { name: string; description: string; path: string; script: string };
-        return text(`工作流 ${v.name}\n描述：${v.description || "无"}\n文件：${v.path}\n\n脚本：\n${v.script}`);
+        const v = value as { name: string; description: string; args?: string; phases?: string[]; path: string; script: string };
+        const extra = [
+          v.args ? `参数：${v.args}` : "",
+          v.phases?.length ? `阶段：${v.phases.join(" → ")}` : "",
+        ].filter(Boolean).join("\n");
+        return text(`工作流 ${v.name}\n描述：${v.description || "无"}${extra ? "\n" + extra : ""}\n文件：${v.path}\n\n脚本：\n${v.script}`);
       },
     },
     async execute(args, exec) {
       const def = loadWorkflow(resolveCwd(exec?.agent), args.name);
       if (!def) throw new Error(`找不到工作流「${args.name}」。先用 workflow_list 看看有哪些。`);
-      return { name: def.name, description: def.description, source: def.source, path: def.path, script: def.script };
+      return {
+        name: def.name,
+        description: def.description,
+        ...(def.args ? { args: def.args } : {}),
+        ...(def.phases ? { phases: def.phases } : {}),
+        source: def.source,
+        path: def.path,
+        script: def.script,
+      };
     },
   });
 
@@ -160,7 +185,12 @@ export function createWorkflowTools(ctx: Context) {
       if (!def) throw new Error(`找不到工作流「${args.name}」。先用 workflow_list 看看有哪些。`);
       const run = engine.start({
         script: def.script,
-        meta: { name: def.name, description: def.description, ...(def.whenToUse ? { whenToUse: def.whenToUse } : {}) },
+        meta: {
+          name: def.name,
+          description: def.description,
+          ...(def.whenToUse ? { whenToUse: def.whenToUse } : {}),
+          ...(def.phases?.length ? { phases: def.phases.map((title) => ({ title })) } : {}),
+        },
         args: args.args,
         parent,
         ...(exec?.signal ? { signal: exec.signal } : {}),
@@ -192,6 +222,8 @@ export function createWorkflowTools(ctx: Context) {
       description: { type: "string", required: true, description: "一句话说明这个工作流做什么" },
       script: { type: "string", required: true, description: "编排脚本正文（纯 JS，支持 top-level await，以 return 结束）" },
       whenToUse: { type: "string", description: "什么时候该用它" },
+      args: { type: "string", description: "参数说明，例如 \"files (string[]) 要审查的文件路径\"" },
+      phases: { type: "array", items: { type: "string" }, description: "阶段标题列表，脚本里用 phase() 对应" },
     },
     output: {
       schema: {
@@ -215,6 +247,8 @@ export function createWorkflowTools(ctx: Context) {
         name: args.name,
         description: args.description,
         ...(args.whenToUse ? { whenToUse: args.whenToUse } : {}),
+        ...(args.args ? { args: args.args } : {}),
+        ...(args.phases?.length ? { phases: args.phases } : {}),
       }, args.script);
       return { name: args.name, path };
     },

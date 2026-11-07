@@ -62,6 +62,8 @@ const workflowSource = [
   '---',
   'name: fanout',
   'description: fan out to N subagents',
+  'args: n (number) how many subagents to start',
+  'phases: gather, report',
   '---',
   'const n = (args && args.n) || 1',
   'const answers = []',
@@ -85,7 +87,12 @@ try {
 
   const shown = await tool('workflow_show').execute({ name: 'fanout' }, exec)
   if (!shown.script.includes('agent(')) fail('show 未返回脚本正文')
-  ok('workflow_show 返回脚本 ' + shown.script.split('\n').length + ' 行')
+  if (!shown.args || !shown.args.includes('n (number)')) fail('show 未返回 args 说明: ' + JSON.stringify(shown.args))
+  if (JSON.stringify(shown.phases) !== JSON.stringify(['gather', 'report'])) fail('show 未返回 phases: ' + JSON.stringify(shown.phases))
+  ok('workflow_show 返回脚本 ' + shown.script.split('\n').length + ' 行，含 args 与 phases')
+
+  const listedArgs = listed.workflows[0]
+  if (JSON.stringify(listedArgs.phases) !== JSON.stringify(['gather', 'report'])) fail('list 未返回 phases')
 
   const t0 = Date.now()
   const out = await tool('workflow_run').execute({ name: 'fanout', args: { n: 3 } }, exec)

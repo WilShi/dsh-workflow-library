@@ -28,6 +28,14 @@ export interface WorkflowMeta {
   name: string;
   description: string;
   whenToUse?: string;
+  /**
+   * Comma-separated phase titles in the frontmatter, exposed as progress
+   * vocabulary to observers. The engine matches these against `phase()` calls by
+   * exact string and imposes no execution structure from them.
+   */
+  phases?: string[];
+  /** Free-text description of the arguments the script expects from `args`. */
+  args?: string;
 }
 
 /** A workflow as discovered on disk, without its script body. */
@@ -123,10 +131,16 @@ export function parseWorkflowFile(path: string, source: string, fallbackName: st
   const meta = parseFrontmatter(frontmatter);
   const name = meta.name || fallbackName;
   if (!name) return null;
+  const phases = (meta.phases ?? "")
+    .split(",")
+    .map((title) => title.trim())
+    .filter(Boolean);
   return {
     name,
     description: meta.description || "",
     ...(meta.whenToUse ? { whenToUse: meta.whenToUse } : {}),
+    ...(phases.length ? { phases } : {}),
+    ...(meta.args ? { args: meta.args } : {}),
     path,
     source,
     script: body,
@@ -151,7 +165,15 @@ export function discoverWorkflows(cwd: string): WorkflowEntry[] {
       const def = parseWorkflowFile(join(root.dir, fileName), root.source, fallback);
       if (!def || seen.has(def.name)) continue;
       seen.add(def.name);
-      found.push({ name: def.name, description: def.description, ...(def.whenToUse ? { whenToUse: def.whenToUse } : {}), path: def.path, source: def.source });
+      found.push({
+        name: def.name,
+        description: def.description,
+        ...(def.whenToUse ? { whenToUse: def.whenToUse } : {}),
+        ...(def.phases ? { phases: def.phases } : {}),
+        ...(def.args ? { args: def.args } : {}),
+        path: def.path,
+        source: def.source,
+      });
     }
   }
   return found;
@@ -180,6 +202,8 @@ export function saveWorkflow(cwd: string, meta: WorkflowMeta, script: string): s
     "name: " + meta.name,
     "description: " + meta.description,
     ...(meta.whenToUse ? ["whenToUse: " + meta.whenToUse] : []),
+    ...(meta.args ? ["args: " + meta.args] : []),
+    ...(meta.phases?.length ? ["phases: " + meta.phases.join(", ")] : []),
     "---",
     "",
   ].join("\n");
